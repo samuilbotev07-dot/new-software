@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
+/* Визуален език: счетоводна книга, тефтер, касова лента. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #12213a;
+  --ink-soft: #4a5568;
+  --paper: #f3f4f1;
+  --card: #ffffff;
+  --rule: #dcdcd4;
+  --ledger: #2c6e52;
+  --ledger-soft: #e3ede8;
+  --stamp: #b23b32;
+  --stamp-soft: #f5e4e2;
+  --amber: #c98a2e;
+  --amber-soft: #f5ecdc;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-rule: var(--rule);
+  --color-ledger: var(--ledger);
+  --color-ledger-soft: var(--ledger-soft);
+  --color-stamp: var(--stamp);
+  --color-stamp-soft: var(--stamp-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --font-display: var(--font-unbounded);
+  --font-sans: var(--font-onest);
+  --font-mono: var(--font-plex-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-onest), system-ui, sans-serif;
+}
+
+/* Числа като в тефтер: моноширинни, вертикално подравнени колони. */
+.num {
+  font-family: var(--font-plex-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Разчертана счетоводна хартия. */
+.ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(2rem - 1px),
+    var(--rule) calc(2rem - 1px),
+    var(--rule) 2rem
+  );
+}
+
+/* Касова лента: тясна ивица с назъбен долен ръб. */
+.receipt {
+  background: var(--card);
+  box-shadow: 0 1px 3px rgb(18 33 58 / 0.12);
+}
+.receipt-edge {
+  height: 12px;
+  background: var(--card);
+  -webkit-mask: conic-gradient(from -45deg at 50% 0, transparent 90deg, #000 0) 0 0 /
+    16px 100% repeat-x;
+  mask: conic-gradient(from -45deg at 50% 0, transparent 90deg, #000 0) 0 0 /
+    16px 100% repeat-x;
+  transform: scaleY(-1);
+}
+
+/* Печат — за критични състояния. */
+.stamp-mark {
+  border: 2px solid var(--stamp);
+  color: var(--stamp);
+  transform: rotate(-3deg);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Видим фокус при клавиатура. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
