@@ -72,6 +72,9 @@ export default async function DashboardPage({
             {bg.onboarding.title}
           </Link>
         ) : null}
+        <Link href="/demo" className="text-sm text-ink-soft underline">
+          {bg.demo.cta}
+        </Link>
       </div>
     );
   }

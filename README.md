@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Бизнес Контролна Система
 
-## Getting Started
+Уеб приложение за собственици на физически бизнеси (салон, барбершоп, кафене, фитнес, магазин, сервиз): въвеждаш числата си веднъж месечно и получаваш реалната си печалба, марж, кеш, оценка на здравето на бизнеса (0–100), сравнения, ценови калкулатори, AI експорт и Excel експорт.
 
-First, run the development server:
+**Метод 5К:** Контрол → Кешфлоу → Калкулация → Корекция → Капитализация.
+
+## Стек
+
+- Next.js 15 (App Router, TypeScript strict) · Tailwind CSS 4
+- Supabase (Postgres + Auth + RLS)
+- Recharts · SheetJS (client-side Excel) · Vitest
+
+## Стартиране
 
 ```bash
+npm install
+cp .env.example .env.local   # попълни двата ключа от Supabase
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Схемата е в `supabase/migrations/` — прилага се поред в SQL editor-а на Supabase (или с `supabase db push`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Команди
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Команда | Какво прави |
+|---|---|
+| `npm run dev` | Локален сървър |
+| `npm run build` | Production билд |
+| `npm test` | Тестове на калкулационния енджин (Vitest) |
+| `npm run lint` | ESLint |
 
-## Learn More
+## Архитектура
 
-To learn more about Next.js, take a look at the following resources:
+- **`lib/calc/`** — целият калкулационен енджин: чисти функции, без странични ефекти. Парите се смятат в евроцентове (цели числа); деление на нула винаги връща 0, UI показва „—". **Нула изчисления извън тази папка.**
+- **`lib/i18n/bg.ts`** — всички текстове в интерфейса, на едно място.
+- **`lib/db/`** — достъп до Supabase + преобразуване ред ↔ домейн тип. Базата пази въведеното, приложението смята.
+- **`lib/ai-export/`** — генерира текст за AI консултант локално; нищо не се изпраща към API.
+- **`lib/excel/`** — Excel експорт изцяло client-side.
+- **RLS на всяка таблица** — потребител вижда само своите редове (тествано: изолация на четене и запис между потребители).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Деплой (Vercel)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Env променливи: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+След деплой в Supabase → Authentication → URL Configuration задай **Site URL** на production адреса, за да работят имейл линковете (потвърждение и нова парола).
