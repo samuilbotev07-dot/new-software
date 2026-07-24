@@ -40,6 +40,14 @@ npm run dev
 
 ## Деплой (Vercel)
 
-Env променливи: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+Env променливи: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (има и резервни константи в `lib/supabase/config.ts` — anon ключът е публичен по дизайн, данните пази RLS).
+
+Текущият production деплой е във Vercel проекта `github` (може да се преименува от дашборда). Понеже репото е публично, билдът тегли кода директно от GitHub с install command:
+
+```
+curl -sL https://codeload.github.com/samuilbotev07-dot/new-software/tar.gz/refs/heads/<клон> | tar xz --strip-components=1 && npm install
+```
+
+За постоянна настройка: импортирай репото във Vercel (Add New → Project) — тогава всеки push деплойва автоматично и install command-ът не е нужен.
 
 След деплой в Supabase → Authentication → URL Configuration задай **Site URL** на production адреса, за да работят имейл линковете (потвърждение и нова парола).
