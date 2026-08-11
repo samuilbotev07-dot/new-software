@@ -1,14 +1,16 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/field';
+import { authClient } from '@/lib/auth/client';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token') ?? '';
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -21,15 +23,13 @@ export default function ResetPasswordPage() {
       return;
     }
     setBusy(true);
-    const supabase = createClient();
-    const { error: err } = await supabase.auth.updateUser({ password });
+    const { error: err } = await authClient.resetPassword({ newPassword: password, token });
     if (err) {
       setError(bg.auth.genericError);
       setBusy(false);
       return;
     }
-    router.push('/');
-    router.refresh();
+    router.push('/login');
   }
 
   return (
@@ -48,5 +48,13 @@ export default function ResetPasswordPage() {
         {bg.auth.resetSave}
       </Button>
     </form>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

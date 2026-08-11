@@ -7,18 +7,18 @@
 ## Стек
 
 - Next.js 15 (App Router, TypeScript strict) · Tailwind CSS 4
-- Supabase (Postgres + Auth + RLS)
+- Neon (безплатен serverless Postgres) + Better Auth (имейл/парола, сесии)
 - Recharts · SheetJS (client-side Excel) · Vitest
 
 ## Стартиране
 
 ```bash
 npm install
-cp .env.example .env.local   # попълни двата ключа от Supabase
+cp .env.example .env.local   # DATABASE_URL (Neon) + BETTER_AUTH_SECRET
 npm run dev
 ```
 
-Схемата е в `supabase/migrations/` — прилага се поред в SQL editor-а на Supabase (или с `supabase db push`).
+Схемата е в `db/schema.sql` — залепя се веднъж в SQL Editor-а на Neon (или `psql -f db/schema.sql`).
 
 ## Команди
 
@@ -33,21 +33,19 @@ npm run dev
 
 - **`lib/calc/`** — целият калкулационен енджин: чисти функции, без странични ефекти. Парите се смятат в евроцентове (цели числа); деление на нула винаги връща 0, UI показва „—". **Нула изчисления извън тази папка.**
 - **`lib/i18n/bg.ts`** — всички текстове в интерфейса, на едно място.
-- **`lib/db/`** — достъп до Supabase + преобразуване ред ↔ домейн тип. Базата пази въведеното, приложението смята.
+- **`lib/db/`** — SQL заявки (pg) + преобразуване ред ↔ домейн тип. Всяка заявка е ограничена до потребителя от сесията — това е границата на изолация. Базата пази въведеното, приложението смята.
 - **`lib/ai-export/`** — генерира текст за AI консултант локално; нищо не се изпраща към API.
 - **`lib/excel/`** — Excel експорт изцяло client-side.
-- **RLS на всяка таблица** — потребител вижда само своите редове (тествано: изолация на четене и запис между потребители).
+- **`lib/auth/`** — Better Auth: регистрация, вход, нова парола (Resend, ако е зададен `RESEND_API_KEY`), изтриване на акаунт. При регистрация се създават профил и настройки със стандартните категории.
 
 ## Деплой (Vercel)
 
-Env променливи: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (има и резервни константи в `lib/supabase/config.ts` — anon ключът е публичен по дизайн, данните пази RLS).
+Env променливи в проекта: `DATABASE_URL` (pooled connection string от Neon), `BETTER_AUTH_SECRET` (произволен дълъг низ), по желание `RESEND_API_KEY` + `EMAIL_FROM` за имейлите за нова парола.
 
-Текущият production деплой е във Vercel проекта `github` (може да се преименува от дашборда). Понеже репото е публично, билдът тегли кода директно от GitHub с install command:
+Понеже репото е публично, текущият деплой тегли кода директно от GitHub с install command:
 
 ```
 curl -sL https://codeload.github.com/samuilbotev07-dot/new-software/tar.gz/refs/heads/<клон> | tar xz --strip-components=1 && npm install
 ```
 
-За постоянна настройка: импортирай репото във Vercel (Add New → Project) — тогава всеки push деплойва автоматично и install command-ът не е нужен.
-
-След деплой в Supabase → Authentication → URL Configuration задай **Site URL** на production адреса, за да работят имейл линковете (потвърждение и нова парола).
+За постоянна настройка: импортирай репото във Vercel — тогава всеки push деплойва автоматично.

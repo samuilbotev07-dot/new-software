@@ -1,52 +1,32 @@
-import { createServerClient } from '@supabase/ssr';
+import { getSessionCookie } from 'better-auth/cookies';
 import { NextResponse, type NextRequest } from 'next/server';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase/config';
 
-const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password', '/auth'];
+const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password', '/api/auth'];
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
-            request.cookies.set(name, value);
-          }
-          response = NextResponse.next({ request });
-          for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
-          }
-        },
-      },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+/**
+ * Оптимистична проверка: гледа само наличието на session cookie.
+ * Истинската валидация на сесията става на сървъра при всяка заявка.
+ */
+export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+  const hasSession = getSessionCookie(request) != null;
 
-  if (!user && !isPublic) {
+  if (!hasSession && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.search = '';
     return NextResponse.redirect(url);
   }
 
-  if (user && (path === '/login' || path === '/register')) {
+  if (hasSession && (path === '/login' || path === '/register')) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     url.search = '';
     return NextResponse.redirect(url);
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

@@ -7,7 +7,6 @@ import { monthRowToInput, settingsRowToCalc } from '@/lib/db/mappers';
 import type { MonthRow, ProfileRow, SettingsRow } from '@/lib/db/types';
 import { buildWorkbook } from '@/lib/excel/build';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
 
 /** Експорт на всички данни в Excel — достъпен от всеки екран. */
 export function ExportExcelButton() {
@@ -16,20 +15,16 @@ export function ExportExcelButton() {
   async function exportAll() {
     setBusy(true);
     try {
-      const supabase = createClient();
-      const [profileRes, settingsRes, monthsRes] = await Promise.all([
-        supabase.from('profiles').select('*').maybeSingle(),
-        supabase.from('settings').select('*').maybeSingle(),
-        supabase
-          .from('months')
-          .select('*')
-          .order('year', { ascending: true })
-          .order('month', { ascending: true }),
-      ]);
-
-      const profile = (profileRes.data as ProfileRow | null) ?? null;
-      const settingsRow = (settingsRes.data as SettingsRow | null) ?? null;
-      const monthRows = ((monthsRes.data as MonthRow[] | null) ?? []).slice();
+      const res = await fetch('/api/export-data');
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        profile: ProfileRow | null;
+        settingsRow: SettingsRow | null;
+        monthRows: MonthRow[];
+      };
+      const profile = data.profile;
+      const settingsRow = data.settingsRow;
+      const monthRows = data.monthRows ?? [];
 
       const settings = settingsRow
         ? settingsRowToCalc(settingsRow)

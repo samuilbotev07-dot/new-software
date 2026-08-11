@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { ExportExcelButton } from '@/components/export-excel-button';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/field';
+import { authClient } from '@/lib/auth/client';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
+import { deleteAccount as deleteAccountAction } from '@/app/actions';
 
 export function DataPanel() {
   const t = bg.settings.data;
@@ -18,14 +19,14 @@ export function DataPanel() {
   async function deleteAccount() {
     setBusy(true);
     setError('');
-    const supabase = createClient();
-    const { error: err } = await supabase.rpc('delete_own_account');
-    if (err) {
+    try {
+      await deleteAccountAction();
+    } catch {
       setError(bg.common.saveError);
       setBusy(false);
       return;
     }
-    await supabase.auth.signOut();
+    await authClient.signOut().catch(() => undefined);
     router.push('/register');
     router.refresh();
   }

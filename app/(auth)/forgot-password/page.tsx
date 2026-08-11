@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/field';
+import { authClient } from '@/lib/auth/client';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -15,10 +15,7 @@ export default function ForgotPasswordPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const supabase = createClient();
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
+    await authClient.requestPasswordReset({ email, redirectTo: '/reset-password' });
     setSent(true);
     setBusy(false);
   }

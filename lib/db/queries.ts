@@ -1,60 +1,62 @@
-/** Достъп до данните от сървърни компоненти. Само четене/писане — без сметки. */
+/**
+ * Достъп до данните от сървъра. Всяка заявка е ограничена до текущия
+ * потребител от сесията — това е границата на изолация между акаунти.
+ * Само четене/писане — без сметки (те живеят в lib/calc/).
+ */
 import 'server-only';
 import { computeMonth } from '@/lib/calc/month';
 import type { CalcSettings, MonthDerived } from '@/lib/calc/types';
-import { createClient } from '@/lib/supabase/server';
+import { getUserId } from '@/lib/auth/server';
+import { pool } from './pool';
 import { monthRowToInput, settingsRowToCalc } from './mappers';
 import type { CatalogRow, MonthRow, ProfileRow, SettingsRow } from './types';
 
-export async function getUserId(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
-
 export async function getProfile(): Promise<ProfileRow | null> {
-  const supabase = await createClient();
-  const { data } = await supabase.from('profiles').select('*').maybeSingle();
-  return (data as ProfileRow | null) ?? null;
+  const userId = await getUserId();
+  if (!userId) return null;
+  const { rows } = await pool.query(
+    'select *, business_start_date::text as business_start_date from profiles where id = $1',
+    [userId],
+  );
+  return (rows[0] as ProfileRow | undefined) ?? null;
 }
 
 export async function getSettingsRow(): Promise<SettingsRow | null> {
-  const supabase = await createClient();
-  const { data } = await supabase.from('settings').select('*').maybeSingle();
-  return (data as SettingsRow | null) ?? null;
+  const userId = await getUserId();
+  if (!userId) return null;
+  const { rows } = await pool.query('select * from settings where user_id = $1', [userId]);
+  return (rows[0] as SettingsRow | undefined) ?? null;
 }
 
 export async function listCatalog(): Promise<CatalogRow[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('product_catalog')
-    .select('*')
-    .order('sort_order', { ascending: true });
-  return (data as CatalogRow[] | null) ?? [];
+  const userId = await getUserId();
+  if (!userId) return [];
+  const { rows } = await pool.query(
+    'select * from product_catalog where user_id = $1 order by sort_order asc',
+    [userId],
+  );
+  return rows as CatalogRow[];
 }
 
 /** Всички месеци, възходящо по време. */
 export async function listMonthRows(): Promise<MonthRow[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('months')
-    .select('*')
-    .order('year', { ascending: true })
-    .order('month', { ascending: true });
-  return (data as MonthRow[] | null) ?? [];
+  const userId = await getUserId();
+  if (!userId) return [];
+  const { rows } = await pool.query(
+    'select * from months where user_id = $1 order by year asc, month asc',
+    [userId],
+  );
+  return rows as MonthRow[];
 }
 
 export async function getMonthRow(year: number, month: number): Promise<MonthRow | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('months')
-    .select('*')
-    .eq('year', year)
-    .eq('month', month)
-    .maybeSingle();
-  return (data as MonthRow | null) ?? null;
+  const userId = await getUserId();
+  if (!userId) return null;
+  const { rows } = await pool.query(
+    'select * from months where user_id = $1 and year = $2 and month = $3',
+    [userId, year, month],
+  );
+  return (rows[0] as MonthRow | undefined) ?? null;
 }
 
 export interface AppContext {

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { NumberField, SelectField, TextField } from '@/components/ui/field';
 import type { ProfileRow } from '@/lib/db/types';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
+import { updateProfile } from '@/app/actions';
 
 export function BusinessForm({ profile }: { profile: ProfileRow | null }) {
   const t = bg.settings.business;
@@ -24,19 +24,12 @@ export function BusinessForm({ profile }: { profile: ProfileRow | null }) {
 
   async function save() {
     setState('saving');
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return setState('error');
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        ...form,
-        business_start_date: form.business_start_date || null,
-      })
-      .eq('id', user.id);
-    setState(error ? 'error' : 'saved');
+    try {
+      await updateProfile(form);
+      setState('saved');
+    } catch {
+      setState('error');
+    }
   }
 
   return (

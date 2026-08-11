@@ -15,7 +15,7 @@ import type {
 import type { CatalogRow } from '@/lib/db/types';
 import { fmtMoney, fmtMonth, fmtPct } from '@/lib/format';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
+import { saveMonth } from '@/app/actions';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -76,36 +76,27 @@ export function MonthEntryForm({
 
   const save = useCallback(async (payload: MonthInput) => {
     setSaveState('saving');
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setSaveState('error');
-      return;
-    }
-    const { error } = await supabase.from('months').upsert(
-      {
-        user_id: user.id,
+    try {
+      await saveMonth({
         year: payload.year,
         month: payload.month,
-        working_days: payload.workingDays,
+        workingDays: payload.workingDays,
         clients: payload.clients,
         transactions: payload.transactions,
-        cash_start: payload.cashStart,
-        cash_end: payload.cashEnd,
+        cashStart: payload.cashStart,
+        cashEnd: payload.cashEnd,
         revenue: payload.revenue,
         expenses: payload.expenses,
         taxes: payload.taxes,
         cashflow: payload.cashflow,
         products: payload.products,
-        self_analysis: payload.selfAnalysis ?? {},
+        selfAnalysis: (payload.selfAnalysis ?? {}) as Record<string, string>,
         notes: payload.notes ?? '',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,year,month' },
-    );
-    setSaveState(error ? 'error' : 'saved');
+      });
+      setSaveState('saved');
+    } catch {
+      setSaveState('error');
+    }
   }, []);
 
   // Автозапис с debounce 800 ms.

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/field';
+import { authClient } from '@/lib/auth/client';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,14 +19,9 @@ export default function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError('');
-    const supabase = createClient();
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: err } = await authClient.signIn.email({ email, password });
     if (err) {
-      setError(
-        err.message.includes('Invalid login credentials')
-          ? bg.auth.invalidCredentials
-          : bg.auth.genericError,
-      );
+      setError(err.status === 401 ? bg.auth.invalidCredentials : bg.auth.genericError);
       setBusy(false);
       return;
     }

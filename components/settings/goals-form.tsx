@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { NumberField, TextAreaField } from '@/components/ui/field';
 import type { SettingsRow } from '@/lib/db/types';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
+import { updateGoals } from '@/app/actions';
 
 export function GoalsForm({ settings }: { settings: SettingsRow | null }) {
   const t = bg.settings.goals;
@@ -22,14 +22,8 @@ export function GoalsForm({ settings }: { settings: SettingsRow | null }) {
 
   async function save() {
     setState('saving');
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return setState('error');
-    const { error } = await supabase
-      .from('settings')
-      .update({
+    try {
+      await updateGoals({
         target_profit: form.target_profit,
         min_margin: form.min_margin_pct / 100,
         min_cash_buffer: form.min_cash_buffer,
@@ -37,10 +31,11 @@ export function GoalsForm({ settings }: { settings: SettingsRow | null }) {
         goals_12m: form.goals_12m,
         biggest_problem: form.biggest_problem,
         top3_priorities: form.top3_priorities,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id);
-    setState(error ? 'error' : 'saved');
+      });
+      setState('saved');
+    } catch {
+      setState('error');
+    }
   }
 
   return (

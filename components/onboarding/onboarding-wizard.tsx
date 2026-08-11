@@ -9,7 +9,7 @@ import { GoalsForm } from '@/components/settings/goals-form';
 import { Button } from '@/components/ui/button';
 import type { CatalogRow, ProfileRow, SettingsRow } from '@/lib/db/types';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
+import { completeOnboarding } from '@/app/actions';
 
 const STEPS = ['business', 'goals', 'categories', 'catalog'] as const;
 type Step = (typeof STEPS)[number];
@@ -37,13 +37,7 @@ export function OnboardingWizard({
 
   async function finish() {
     setBusy(true);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id);
-    }
+    await completeOnboarding().catch(() => undefined);
     router.push('/');
     router.refresh();
   }

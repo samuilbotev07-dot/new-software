@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { CategoryDef } from '@/lib/calc/types';
 import type { SettingsRow } from '@/lib/db/types';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
+import { updateCategories } from '@/app/actions';
 
 const MAX_REVENUE = 10;
 const MAX_EXPENSE = 25;
@@ -84,22 +84,14 @@ export function CategoriesForm({ settings }: { settings: SettingsRow | null }) {
 
   async function save() {
     setState('saving');
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return setState('error');
     const clean = (list: CategoryDef[]) =>
       list.filter((c) => c.name.trim().length > 0).map((c, i) => ({ ...c, order: i }));
-    const { error } = await supabase
-      .from('settings')
-      .update({
-        revenue_categories: clean(revenue),
-        expense_categories: clean(expenses),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id);
-    setState(error ? 'error' : 'saved');
+    try {
+      await updateCategories({ revenue: clean(revenue), expenses: clean(expenses) });
+      setState('saved');
+    } catch {
+      setState('error');
+    }
   }
 
   return (

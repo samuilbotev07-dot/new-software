@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { NumberField } from '@/components/ui/field';
+import { useRouter } from 'next/navigation';
 import type { CatalogRow } from '@/lib/db/types';
 import { bg } from '@/lib/i18n/bg';
-import { createClient } from '@/lib/supabase/client';
+import { saveCatalog } from '@/app/actions';
 
 interface EditableItem {
   id?: string;
@@ -32,6 +33,7 @@ export function CatalogForm({ catalog }: { catalog: CatalogRow[] }) {
       sort_order: c.sort_order,
     })),
   );
+  const router = useRouter();
   const [removed, setRemoved] = useState<string[]>([]);
   const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
@@ -40,35 +42,25 @@ export function CatalogForm({ catalog }: { catalog: CatalogRow[] }) {
 
   async function save() {
     setState('saving');
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return setState('error');
-
-    if (removed.length > 0) {
-      const { error } = await supabase.from('product_catalog').delete().in('id', removed);
-      if (error) return setState('error');
+    const valid = items
+      .filter((x) => x.name.trim().length > 0)
+      .map((x) => ({
+        id: x.id,
+        name: x.name.trim(),
+        kind: x.kind || 'Услуга',
+        default_price: x.default_price,
+        default_cost: x.default_cost,
+        duration_minutes: x.duration_minutes,
+        active: x.active,
+      }));
+    try {
+      await saveCatalog({ items: valid, removedIds: removed });
+      setRemoved([]);
+      setState('saved');
+      router.refresh();
+    } catch {
+      setState('error');
     }
-
-    const valid = items.filter((x) => x.name.trim().length > 0);
-    const payload = valid.map((x, i) => ({
-      ...(x.id ? { id: x.id } : {}),
-      user_id: user.id,
-      name: x.name.trim(),
-      kind: x.kind || 'Услуга',
-      default_price: x.default_price,
-      default_cost: x.default_cost,
-      duration_minutes: x.duration_minutes,
-      active: x.active,
-      sort_order: i,
-    }));
-    if (payload.length > 0) {
-      const { error } = await supabase.from('product_catalog').upsert(payload);
-      if (error) return setState('error');
-    }
-    setRemoved([]);
-    setState('saved');
   }
 
   return (
